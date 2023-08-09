@@ -1,6 +1,6 @@
 ---
 title: "910_demo"
-author: "dc"
+author: "D.C.Morgan"
 date: "2023-08-09"
 output: html_document
 ---
@@ -14,6 +14,7 @@ knit2html(o)  # compile to HTML
 
 ```
 
+# Load Packages and Read in Data
 
 ```{r load, echo = FALSE}
 
@@ -25,8 +26,8 @@ library(dplyr)
 
 med_data <-read.csv('https://tinyurl.com/4e97jvuk')
 
-head(med_data)
-summary(med_data)
+kable(head(med_data))
+kable(summary(med_data))
 dim(med_data)
 
 med_data <- med_data %>% drop_na()
@@ -44,16 +45,25 @@ pairs(med_data[, c(3,5,7,8,9)], main="medical dataset", pch=21, bg=col[med_data$
 
 ```
 
+# Simple Histogram
+
 ```{r hist,echo = FALSE}
+
 hist(med_data$ejection_fraction,breaks=4)
 ```
 
+# Advanced Histogram with installed Library
+
 ```{r hist2,echo = FALSE}
+
 ggplot(med_data, aes(x=ejection_fraction, fill=agegroup)) +
   geom_histogram(binwidth=5, color="black") +
   facet_wrap(~agegroup) +
   labs(x="ejection_fraction", y="Count", title="Histogram of ejection_fraction")
 ```
+
+# Basic Machine Learning via Linear Model
+## notice breaking data into training and testing sets
 
 ```{r glm,echo = FALSE}
 set.seed(0)
@@ -69,6 +79,8 @@ model <- glm(dead ~ creatinine_phosphokinase + ejection_fraction + platelets + s
 summary(model)
 
 ```
+
+# Evaluating Machine Learning Performance
 
 ```{r acc,echo = FALSE}
 prediction = ifelse(predict(model, validation, type = "response") < 0.5, "not dead", "dead")
