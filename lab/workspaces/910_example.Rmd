@@ -1,0 +1,105 @@
+---
+title: "910_demo"
+author: "dc"
+date: "2023-08-09"
+output: html_document
+---
+
+```{r setup, include=FALSE, echo = FALSE}
+library(knitr,HumanHT12v4.0Manifest)
+knitr::opts_chunk$set(echo = TRUE)
+(s = system.file("examples", "knitr-spin.R", package = "knitr"))
+o = spin(s, knit = FALSE, format = "Rhtml")  # convert to Rmd only
+knit2html(o)  # compile to HTML
+
+```
+
+
+```{r load, echo = FALSE}
+
+install.packages("ggplot2")
+library(ggplot2)
+install.packages("tidyr")
+library(tidyr)
+library(dplyr)
+
+med_data <-read.csv('https://tinyurl.com/4e97jvuk')
+
+head(med_data)
+summary(med_data)
+dim(med_data)
+
+med_data <- med_data %>% drop_na()
+
+
+med_data <- med_data %>% mutate(agegroup = case_when(age >= 85 ~ 'old',
+                                                     age >= 70  & age <= 85 ~ 'middle old',
+                                                     age >= 55  & age <= 70 ~ 'middle young',
+                                                     age <= 55 ~ 'young')) # end function
+
+col <- c("red","orange", "green3", "yellow")
+names(col) <- c("young", "middle young", "middle old", "old")
+pairs(med_data[, c(3,5,7,8,9)], main="medical dataset", pch=21, bg=col[med_data$agegroup])
+
+
+```
+
+```{r hist,echo = FALSE}
+hist(med_data$ejection_fraction,breaks=4)
+```
+
+```{r hist2,echo = FALSE}
+ggplot(med_data, aes(x=ejection_fraction, fill=agegroup)) +
+  geom_histogram(binwidth=5, color="black") +
+  facet_wrap(~agegroup) +
+  labs(x="ejection_fraction", y="Count", title="Histogram of ejection_fraction")
+```
+
+```{r glm,echo = FALSE}
+set.seed(0)
+N <- nrow(med_data)
+idx <- sample(1:N, N*2/3)
+train <- med_data[idx,]
+validation <- med_data[-idx,]
+
+
+train$dead = train$DEATH_EVENT == "1"
+model <- glm(dead ~ creatinine_phosphokinase + ejection_fraction + platelets + serum_creatinine + serum_sodium,
+             data = train, family=binomial(link="logit"))
+summary(model)
+
+```
+
+```{r acc,echo = FALSE}
+prediction = ifelse(predict(model, validation, type = "response") < 0.5, "not dead", "dead")
+table_mat=table(prediction, validation$DEATH_EVENT)
+
+
+accuracy_Test <- sum(diag(table_mat)) / sum(table_mat)
+accuracy_Test
+
+
+precision <- function(matrix) {
+  # True positive
+  tp <- matrix[2, 2]
+  # false positive
+  fp <- matrix[1, 2]
+  return (tp / (tp + fp))
+}
+
+recall <- function(matrix) {
+  # true positive
+  tp <- matrix[2, 2]# false positive
+  fn <- matrix[2, 1]
+  return (tp / (tp + fn))
+}
+
+prec <- precision(table_mat)
+prec
+rec <- recall(table_mat)
+rec
+
+f1 <- 2 * ((prec * rec) / (prec + rec))
+f1
+
+```
